@@ -40,7 +40,8 @@
       </body>
     </body>
     <!-- Target -->
-    <geom name="target" pos="0 0 .01" material="target" type="sphere" size=".05"/>
+    <!-- no target in simple -->
+    <!--<geom name="target" pos="0 0 .01" material="target" type="sphere" size=".05"/>-->
   </worldbody>
 
   <actuator>

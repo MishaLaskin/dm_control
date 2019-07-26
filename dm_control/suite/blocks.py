@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
-"""Planar Stacker domain."""
+"""Planar Blocks domain."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -36,13 +36,12 @@ import numpy as np
 _CLOSE = .01    # (Meters) Distance below which a thing is considered close.
 _CONTROL_TIMESTEP = .01  # (Seconds)
 _TIME_LIMIT = 10  # (Seconds)
-_ARM_JOINTS = ['arm_root', 'arm_shoulder', 'arm_elbow', 'arm_wrist',
-               'finger', 'fingertip', 'thumb', 'thumbtip']
+
 
 SUITE = containers.TaggedTasks()
 
 
-def make_model(n_boxes, xml_file='stacker.xml'):
+def make_model(n_boxes, xml_file='blocks.xml'):
     """Returns a tuple containing the model XML string and a dict of assets."""
     xml_string = common.read_model(xml_file)
     parser = etree.XMLParser(remove_blank_text=True)
@@ -56,64 +55,19 @@ def make_model(n_boxes, xml_file='stacker.xml'):
     return etree.tostring(mjcf, pretty_print=True), common.ASSETS
 
 
-@SUITE.add('hard')
-def stack_1(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
-            environment_kwargs=None):
-    """Returns stacker task with 2 boxes."""
-    n_boxes = 1
-    physics = Physics.from_xml_string(*make_model(n_boxes=n_boxes))
-    task = Stack(n_boxes=n_boxes,
-                 fully_observable=fully_observable,
-                 random=random)
-    environment_kwargs = environment_kwargs or {}
-    return control.Environment(
-        physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
-        **environment_kwargs)
-
-
-@SUITE.add('hard')
+@SUITE.add('easy')
 def push_1(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
            environment_kwargs=None):
-    """Returns stacker task with 2 boxes."""
+    """Returns block env with one block"""
     n_boxes = 1
     physics = Physics.from_xml_string(
-        *make_model(n_boxes=n_boxes, xml_file='stacker_big_block.xml'))
-    task = Stack(n_boxes=n_boxes,
-                 fully_observable=fully_observable,
-                 random=random,
-                 include_target=False,
-                 easy_init=True
-                 )
-    environment_kwargs = environment_kwargs or {}
-    return control.Environment(
-        physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
-        **environment_kwargs)
-
-
-@SUITE.add('hard')
-def stack_2(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
-            environment_kwargs=None):
-    """Returns stacker task with 2 boxes."""
-    n_boxes = 2
-    physics = Physics.from_xml_string(*make_model(n_boxes=n_boxes))
-    task = Stack(n_boxes=n_boxes,
-                 fully_observable=fully_observable,
-                 random=random)
-    environment_kwargs = environment_kwargs or {}
-    return control.Environment(
-        physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
-        **environment_kwargs)
-
-
-@SUITE.add('hard')
-def stack_4(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
-            environment_kwargs=None):
-    """Returns stacker task with 4 boxes."""
-    n_boxes = 4
-    physics = Physics.from_xml_string(*make_model(n_boxes=n_boxes))
-    task = Stack(n_boxes=n_boxes,
-                 fully_observable=fully_observable,
-                 random=random)
+        *make_model(n_boxes=n_boxes, xml_file='blocks.xml'))
+    task = Blocks(n_boxes=n_boxes,
+                  fully_observable=fully_observable,
+                  random=random,
+                  include_target=False,
+                  easy_init=True
+                  )
     environment_kwargs = environment_kwargs or {}
     return control.Environment(
         physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
@@ -153,7 +107,7 @@ class Physics(mujoco.Physics):
         return np.linalg.norm(site1_to_site2)
 
 
-class Stack(base.Task):
+class Blocks(base.Task):
     """A Stack `Task`: stack the boxes."""
 
     def __init__(self, n_boxes, fully_observable, random=None, include_target=True, easy_init=False):
@@ -170,13 +124,13 @@ class Stack(base.Task):
         self._n_boxes = n_boxes
         self._box_names = ['box' + str(b) for b in range(n_boxes)]
         self._box_joint_names = []
+        self.easy_init = easy_init
         for name in self._box_names:
             for dim in 'xyz':
                 self._box_joint_names.append('_'.join([name, dim]))
         self._fully_observable = fully_observable
-        self.include_target = include_target
-        self.easy_init = easy_init
-        super(Stack, self).__init__(random=random)
+
+        super(Blocks, self).__init__(random=random)
 
     def initialize_episode(self, physics):
         """Sets the state of the environment at the start of each episode."""
@@ -191,25 +145,6 @@ class Stack(base.Task):
         i = 0
         while penetrating:
             i += 1
-            # Randomise angles of arm joints.
-            is_limited = model.jnt_limited[_ARM_JOINTS].astype(np.bool)
-            joint_range = model.jnt_range[_ARM_JOINTS]
-            lower_limits = np.where(is_limited, joint_range[:, 0], -np.pi)
-            upper_limits = np.where(is_limited, joint_range[:, 1], np.pi)
-            angles = uniform(lower_limits, upper_limits)
-            data.qpos[_ARM_JOINTS] = angles
-            #print('resetting', i)
-            if self.easy_init:
-                data.qpos['arm_root'] = np.random.uniform(np.pi/2, 3*np.pi/2)
-            # Symmetrize hand.
-            data.qpos['finger'] = data.qpos['thumb']
-
-            if self.include_target:
-                # Randomise target location.
-                target_height = 2*randint(self._n_boxes) + 1
-                box_size = model.geom_size['target', 0]
-                model.body_pos['target', 'z'] = box_size * target_height
-                model.body_pos['target', 'x'] = uniform(-.37, .37)
 
             # Randomise box locations.
             if self.easy_init:
@@ -228,49 +163,18 @@ class Stack(base.Task):
             physics.after_reset()
             penetrating = physics.data.ncon > 4 if self.easy_init else physics.data.ncon > 0
 
-            if self.easy_init:
-                #f1_x = data.geom_xpos['finger1']
-                #f2_x = data.geom_xpos['finger2']
-                #t1_x = data.geom_xpos['thumb1']
-                #t2_x = data.geom_xpos['thumb2']
-                hand_pos = data.geom_xpos['hand']
-                # fingers = [t1_x, t2_x, f   1_x, f2_x]
-
-                box_pos = data.geom_xpos['box0']
-                distance = np.linalg.norm(hand_pos-box_pos)
-                # print(distance)
-                if distance > .1:
-                    penetrating = True
-
-        super(Stack, self).initialize_episode(physics)
+        super(Blocks, self).initialize_episode(physics)
 
     def get_observation(self, physics):
         """Returns either features or only sensors (to be used with pixels)."""
         obs = collections.OrderedDict()
-        obs['arm_pos'] = physics.bounded_joint_pos(_ARM_JOINTS)
-        obs['arm_vel'] = physics.joint_vel(_ARM_JOINTS)
-        obs['touch'] = physics.touch()
+
         if self._fully_observable:
-            obs['hand_pos'] = physics.body_2d_pose('hand')
             obs['box_pos'] = physics.body_2d_pose(self._box_names)
             obs['box_vel'] = physics.joint_vel(self._box_joint_names)
-            if self.include_target:
-                obs['target_pos'] = physics.body_2d_pose(
-                    'target', orientation=False)
+
         return obs
 
     def get_reward(self, physics):
         """Returns a reward to the agent."""
-        if self.include_target:
-            box_size = physics.named.model.geom_size['target', 0]
-            min_box_to_target_distance = min(physics.site_distance(name, 'target')
-                                             for name in self._box_names)
-            box_is_close = rewards.tolerance(min_box_to_target_distance,
-                                             margin=2*box_size)
-            hand_to_target_distance = physics.site_distance('grasp', 'target')
-            hand_is_far = rewards.tolerance(hand_to_target_distance,
-                                            bounds=(.1, float('inf')),
-                                            margin=_CLOSE)
-            return box_is_close * hand_is_far
-        else:
-            return None
+        return None
