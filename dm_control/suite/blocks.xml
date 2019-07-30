@@ -28,6 +28,10 @@
       <geom material="self"/>
     </default>
 
+    <default class="object2">
+      <geom material="target"/>
+    </default>
+
     <default class="task">
       <site rgba="0 0 0 0"/>
     </default>
@@ -55,15 +59,15 @@
       <joint name="box0_x" type="slide" axis="1 0 0" ref=".5"/>
       <joint name="box0_z" type="slide" axis="0 0 1" ref=".4"/>
       <joint name="box0_y" type="hinge" axis="0 1 0"/>
-      <geom  name="box0" type="box" size=".044 .044 .044" />
+      <geom  name="box0" type="box" size=".033 .033 .033" />
       <site  name="box0" rgba="0.1 0.1 0.1 1" type="sphere"/>
     </body>
 
-    <body name="box1" pos=".4 0 .4" childclass="object">
+    <body name="box1" pos=".4 0 .4" childclass="object2">
       <joint name="box1_x" type="slide" axis="1 0 0" ref=".4"/>
       <joint name="box1_z" type="slide" axis="0 0 1" ref=".4"/>
       <joint name="box1_y" type="hinge" axis="0 1 0"/>
-      <geom  name="box1" type="box" size=".022 .022 .022" />
+      <geom  name="box1" type="box" size=".033 .033 .033" />
       <site  name="box1" type="sphere"/>
     </body>
 

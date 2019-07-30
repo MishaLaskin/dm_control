@@ -89,6 +89,41 @@ def push_1(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
         physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
         **environment_kwargs)
 
+@SUITE.add('hard')
+def push_big_1(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
+           environment_kwargs=None):
+    """Returns stacker task with 2 boxes."""
+    n_boxes = 1
+    physics = Physics.from_xml_string(
+        *make_model(n_boxes=n_boxes, xml_file='stacker_big_heavy_block.xml'))
+    task = Stack(n_boxes=n_boxes,
+                 fully_observable=fully_observable,
+                 random=random,
+                 include_target=False,
+                 easy_init=True
+                 )
+    environment_kwargs = environment_kwargs or {}
+    return control.Environment(
+        physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
+        **environment_kwargs)
+
+
+@SUITE.add('hard')
+def stack_2_blocks(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
+            environment_kwargs=None):
+    """Returns stacker task with 2 boxes."""
+    n_boxes = 2
+    physics = Physics.from_xml_string(*make_model(n_boxes=n_boxes,xml_file='stacker_big_block.xml'))
+    task = Stack(n_boxes=n_boxes,
+                 fully_observable=fully_observable,
+                 random=random,
+                 include_target=False,
+                 easy_init=True
+                 )
+    environment_kwargs = environment_kwargs or {}
+    return control.Environment(
+        physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
+        **environment_kwargs)
 
 @SUITE.add('hard')
 def stack_2(fully_observable=True, time_limit=_TIME_LIMIT, random=None,

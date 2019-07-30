@@ -16,7 +16,7 @@
   <option timestep="0.001" cone="elliptic"/>
 
   <default>
-    <geom friction=".7" solimp="0.9 0.97 0.001" solref=".01 1"/>
+    <geom friction=".3" solimp="0.9 0.97 0.001" solref=".01 1"/>
     <joint solimplimit="0 0.99 0.01" solreflimit=".005 1"/>
     <general ctrllimited="true"/>
     <tendon width="0.01"/>
@@ -123,7 +123,7 @@
       <joint name="box0_x" type="slide" axis="1 0 0" ref=".5"/>
       <joint name="box0_z" type="slide" axis="0 0 1" ref=".4"/>
       <joint name="box0_y" type="hinge" axis="0 1 0"/>
-      <geom  name="box0" type="box" size=".033 .033 .033" mass="1" />
+      <geom  name="box0" type="box" size=".033 .033 .033" mass="4" />
       <site  name="box0" type="sphere"/>
     </body>
 
@@ -131,7 +131,7 @@
       <joint name="box1_x" type="slide" axis="1 0 0" ref=".4"/>
       <joint name="box1_z" type="slide" axis="0 0 1" ref=".4"/>
       <joint name="box1_y" type="hinge" axis="0 1 0"/>
-      <geom  name="box1" type="box" size=".033 .033 .033" />
+      <geom  name="box1" type="box" size=".022 .022 .022" />
       <site  name="box1" type="sphere"/>
     </body>
 
