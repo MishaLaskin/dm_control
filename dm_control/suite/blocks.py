@@ -73,13 +73,14 @@ def push_1(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
         physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
         **environment_kwargs)
 
+
 @SUITE.add('hard')
 def stack_2(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
-           environment_kwargs=None):
+            environment_kwargs=None):
     """Returns block env with one block"""
     n_boxes = 2
     physics = Physics.from_xml_string(
-        *make_model(n_boxes=n_boxes, xml_file='blocks.xml'))
+        *make_model(n_boxes=n_boxes, xml_file='blocks_stacker.xml'))
     task = Blocks(n_boxes=n_boxes,
                   fully_observable=fully_observable,
                   random=random,

@@ -1,0 +1,101 @@
+<mujoco model="planar stacker">
+
+  <include file="./common/visual.xml"/>
+  <include file="./common/skybox.xml"/>
+  <include file="./common/materials.xml"/>
+  <asset>
+    <texture name="background" builtin="flat" type="2d" mark="random" markrgb="1 1 1" width="800" height="800" rgb1=".2 .3 .4"/>
+    <material name="background" texture="background" texrepeat="1 1" texuniform="true"/>
+  </asset>
+
+  <visual>
+    <map shadowclip=".5"/>
+    <quality shadowsize="2048"/>
+  </visual>>
+
+  <option timestep="0.001" cone="elliptic"/>
+
+  <default>
+    <geom friction=".7" solimp="0.9 0.97 0.001" solref=".01 1"/>
+    <joint solimplimit="0 0.99 0.01" solreflimit=".005 1"/>
+    <general ctrllimited="true"/>
+    <tendon width="0.01"/>
+    <site size=".003 .003 .003" material="site" group="3"/>
+
+
+    <default class="object">
+      <geom material="self_highlight"/>
+    </default>
+
+    <default class="object2">
+      <geom material="target"/>
+    </default>
+
+    <default class="task">
+      <site rgba="0 0 0 0"/>
+    </default>
+
+    <default class="obstacle">
+      <geom material="decoration" friction="0"/>
+    </default>
+
+    <!--<default class="ghost">
+      <geom material="target" contype="0" conaffinity="0"/>
+    </default>-->
+  </default>
+
+  <worldbody>
+    <!-- Arena -->
+    <light name="light" directional="true" diffuse=".6 .6 .6" pos="0 0 1" specular=".3 .3 .3"/>
+    <geom name="floor" type="plane" pos="0 0 0" size=".4 .2 10" material="grid"/>
+    <geom name="wall1" type="plane" pos="-.682843 0 .282843" size=".4 .2 10" material="grid" zaxis="1 0 1"/>
+    <geom name="wall2" type="plane" pos=".682843 0 .282843" size=".4 .2 10" material="grid" zaxis="-1 0 1"/>
+    <geom name="background" type="plane" pos="0 .2 .5" size="1 .5 10" material="background" zaxis="0 -1 0"/>
+    <camera name="fixed" pos="0 -16 .4" xyaxes="1 0 0 0 0 1" fovy="4"/>
+
+    <!-- props -->
+    <body name="box0" pos=".5 0 .4" childclass="object">
+      <joint name="box0_x" type="slide" axis="1 0 0" ref=".5"/>
+      <joint name="box0_z" type="slide" axis="0 0 1" ref=".4"/>
+      <joint name="box0_y" type="hinge" axis="0 1 0"/>
+      <geom  name="box0" type="box" size=".033 .033 .033" />
+      <site  name="box0" rgba="0.1 0.1 0.1 1" type="sphere"/>
+    </body>
+
+    <body name="box1" pos=".4 0 .4" childclass="object2">
+      <joint name="box1_x" type="slide" axis="1 0 0" ref=".4"/>
+      <joint name="box1_z" type="slide" axis="0 0 1" ref=".4"/>
+      <joint name="box1_y" type="hinge" axis="0 1 0"/>
+      <geom  name="box1" type="box" size=".033 .033 .033" />
+      <site  name="box1" type="sphere"/>
+    </body>
+
+    <body name="box2" pos=".3 0 .4" childclass="object">
+      <joint name="box2_x" type="slide" axis="1 0 0" ref=".3"/>
+      <joint name="box2_z" type="slide" axis="0 0 1" ref=".4"/>
+      <joint name="box2_y" type="hinge" axis="0 1 0"/>
+      <geom  name="box2" type="box" size=".022 .022 .022" />
+      <site  name="box2" type="sphere"/>
+    </body>
+
+    <body name="box3" pos=".2 0 .4" childclass="object">
+      <joint name="box3_x" type="slide" axis="1 0 0" ref=".2"/>
+      <joint name="box3_z" type="slide" axis="0 0 1" ref=".4"/>
+      <joint name="box3_y" type="hinge" axis="0 1 0"/>
+      <geom  name="box3" type="box" size=".022 .022 .022" />
+      <site  name="box3" type="sphere"/>
+    </body>
+
+
+    <!-- targets -->
+    <!--<body name="target" pos="0 .001 .022" childclass="ghost">
+      <geom  name="target" type="box" size=".022 .022 .022" />
+      <site  name="target" type="sphere"/>
+    </body>-->
+  </worldbody>
+
+  
+
+ 
+
+</mujoco>

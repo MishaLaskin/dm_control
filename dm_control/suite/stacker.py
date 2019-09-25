@@ -39,6 +39,8 @@ _TIME_LIMIT = 10  # (Seconds)
 _ARM_JOINTS = ['arm_root', 'arm_shoulder', 'arm_elbow', 'arm_wrist',
                'finger', 'fingertip', 'thumb', 'thumbtip']
 
+_FINGERLESS_ARM_JOINTS = ['arm_root', 'arm_shoulder', 'arm_elbow']
+
 SUITE = containers.TaggedTasks()
 
 
@@ -89,9 +91,10 @@ def push_1(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
         physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
         **environment_kwargs)
 
+
 @SUITE.add('hard')
 def push_big_1(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
-           environment_kwargs=None):
+               environment_kwargs=None):
     """Returns stacker task with 2 boxes."""
     n_boxes = 1
     physics = Physics.from_xml_string(
@@ -110,20 +113,63 @@ def push_big_1(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
 
 @SUITE.add('hard')
 def stack_2_blocks(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
-            environment_kwargs=None):
+                   environment_kwargs=None):
     """Returns stacker task with 2 boxes."""
     n_boxes = 2
-    physics = Physics.from_xml_string(*make_model(n_boxes=n_boxes,xml_file='stacker_big_block.xml'))
+    physics = Physics.from_xml_string(
+        *make_model(n_boxes=n_boxes, xml_file='stacker_no_target.xml'))
     task = Stack(n_boxes=n_boxes,
                  fully_observable=fully_observable,
                  random=random,
                  include_target=False,
-                 easy_init=True
+                 easy_init=False,
+                 fingers=False
                  )
     environment_kwargs = environment_kwargs or {}
     return control.Environment(
         physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
         **environment_kwargs)
+
+
+@SUITE.add('hard')
+def just_place(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
+               environment_kwargs=None):
+    """Returns stacker task with 2 boxes."""
+    n_boxes = 2
+    physics = Physics.from_xml_string(
+        *make_model(n_boxes=n_boxes, xml_file='stacker_no_target.xml'))
+    task = Stack(n_boxes=n_boxes,
+                 fully_observable=fully_observable,
+                 random=random,
+                 include_target=False,
+                 easy_init=True,
+                 fingers=False
+                 )
+    environment_kwargs = environment_kwargs or {}
+    return control.Environment(
+        physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
+        **environment_kwargs)
+
+
+@SUITE.add('hard')
+def pick_and_place(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
+                   environment_kwargs=None):
+    """Returns stacker task with 2 boxes."""
+    n_boxes = 2
+    physics = Physics.from_xml_string(
+        *make_model(n_boxes=n_boxes, xml_file='stacker_no_target.xml'))
+    task = Stack(n_boxes=n_boxes,
+                 fully_observable=fully_observable,
+                 random=random,
+                 include_target=False,
+                 easy_init=True,
+                 fingers=False
+                 )
+    environment_kwargs = environment_kwargs or {}
+    return control.Environment(
+        physics, task, control_timestep=_CONTROL_TIMESTEP, time_limit=time_limit,
+        **environment_kwargs)
+
 
 @SUITE.add('hard')
 def stack_2(fully_observable=True, time_limit=_TIME_LIMIT, random=None,
@@ -191,7 +237,13 @@ class Physics(mujoco.Physics):
 class Stack(base.Task):
     """A Stack `Task`: stack the boxes."""
 
-    def __init__(self, n_boxes, fully_observable, random=None, include_target=True, easy_init=False):
+    def __init__(self,
+                 n_boxes,
+                 fully_observable,
+                 random=None,
+                 include_target=True,
+                 easy_init=False,
+                 fingers=True):
         """Initialize an instance of the `Stack` task.
 
         Args:
@@ -211,6 +263,8 @@ class Stack(base.Task):
         self._fully_observable = fully_observable
         self.include_target = include_target
         self.easy_init = easy_init
+        self.fingers = fingers
+        self.joints = _ARM_JOINTS if self.fingers else _FINGERLESS_ARM_JOINTS
         super(Stack, self).__init__(random=random)
 
     def initialize_episode(self, physics):
@@ -226,18 +280,19 @@ class Stack(base.Task):
         i = 0
         while penetrating:
             i += 1
-            # Randomise angles of arm joints.
-            is_limited = model.jnt_limited[_ARM_JOINTS].astype(np.bool)
-            joint_range = model.jnt_range[_ARM_JOINTS]
+            # Randomise angles of arm joints.magnet_active
+            is_limited = model.jnt_limited[self.joints].astype(np.bool)
+            joint_range = model.jnt_range[self.joints]
             lower_limits = np.where(is_limited, joint_range[:, 0], -np.pi)
             upper_limits = np.where(is_limited, joint_range[:, 1], np.pi)
             angles = uniform(lower_limits, upper_limits)
-            data.qpos[_ARM_JOINTS] = angles
+            data.qpos[self.joints] = angles
             #print('resetting', i)
             if self.easy_init:
                 data.qpos['arm_root'] = np.random.uniform(np.pi/2, 3*np.pi/2)
             # Symmetrize hand.
-            data.qpos['finger'] = data.qpos['thumb']
+            if self.fingers:
+                data.qpos['finger'] = data.qpos['thumb']
 
             if self.include_target:
                 # Randomise target location.
@@ -247,7 +302,7 @@ class Stack(base.Task):
                 model.body_pos['target', 'x'] = uniform(-.37, .37)
 
             # Randomise box locations.
-            if self.easy_init:
+            if True:
                 for name in self._box_names:
                     data.qpos[name + '_x'] = uniform(-.3, .3)
                     data.qpos[name +
@@ -261,7 +316,7 @@ class Stack(base.Task):
 
             # Check for collisions.
             physics.after_reset()
-            penetrating = physics.data.ncon > 4 if self.easy_init else physics.data.ncon > 0
+            penetrating = physics.data.ncon > 2 if self.easy_init else physics.data.ncon > 2
 
             if self.easy_init:
                 #f1_x = data.geom_xpos['finger1']
@@ -274,7 +329,7 @@ class Stack(base.Task):
                 box_pos = data.geom_xpos['box0']
                 distance = np.linalg.norm(hand_pos-box_pos)
                 # print(distance)
-                if distance > .1:
+                if distance > .2:
                     penetrating = True
 
         super(Stack, self).initialize_episode(physics)
@@ -282,8 +337,8 @@ class Stack(base.Task):
     def get_observation(self, physics):
         """Returns either features or only sensors (to be used with pixels)."""
         obs = collections.OrderedDict()
-        obs['arm_pos'] = physics.bounded_joint_pos(_ARM_JOINTS)
-        obs['arm_vel'] = physics.joint_vel(_ARM_JOINTS)
+        obs['arm_pos'] = physics.bounded_joint_pos(self.joints)
+        obs['arm_vel'] = physics.joint_vel(self.joints)
         obs['touch'] = physics.touch()
         if self._fully_observable:
             obs['hand_pos'] = physics.body_2d_pose('hand')
